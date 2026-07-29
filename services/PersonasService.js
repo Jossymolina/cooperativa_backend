@@ -1,11 +1,11 @@
 
 const pool = require('../Configuraciones/ConexionDb/db');
+const historial = require('../services/Historial');
+
 
 const crearPersona = async (body) => {
-
     const connection = await pool.getConnection();
     try {
-
         const {
             identidad,
             nombres,
@@ -16,42 +16,29 @@ const crearPersona = async (body) => {
             nacionalidad,
             correo,
             tipos_persona,
-            cuenta
+            cuenta,
+            usuario
         } = body;
-
-console.log(body)
-      
-     
-
-        // =====================================
+       // =====================================
         // VALIDAR IDENTIDAD DUPLICADA
         // =====================================
-
         const [personaExiste] = await connection.query(`
             SELECT idpersona
             FROM personas
             WHERE identidad = ?
             LIMIT 1
         `, [identidad]);
-
         if (personaExiste.length > 0) {
             throw new Error('La identidad ya existe');
         }
-console.log("entrandi ")
-
         // =====================================
         // INICIAR TRANSACCIÓN
         // =====================================
-
         await connection.beginTransaction();
 
         // =====================================
         // INSERTAR PERSONA
         // =====================================
-
-
- 
-
         const [personaInsertada] = await connection.query(`
             INSERT INTO personas
             (
@@ -77,23 +64,17 @@ console.log("entrandi ")
             correo || null,
             cuenta
         ]);
-
         const idpersona = personaInsertada.insertId;
-
         // =====================================
         // INSERTAR TIPOS
         // =====================================
-
         for (const item of tipos_persona) {
-
             if (!item.idtipo_persona) {
                 throw new Error('Debe enviar idtipo_persona');
             }
-
             // ==============================
             // VALIDAR TIPO
             // ==============================
-
             const [tipoExiste] = await connection.query(`
                 SELECT idtipo_persona
                 FROM tipos_persona
@@ -101,25 +82,19 @@ console.log("entrandi ")
                 AND estado = 'ACTIVO'
                 LIMIT 1
             `, [item.idtipo_persona]);
-
             if (tipoExiste.length === 0) {
                 throw new Error(
                     `El tipo ${item.idtipo_persona} no existe o está inactivo`
                 );
             }
-
             // ==============================
             // VALIDAR DUPLICADOS
             // ==============================
-
             const duplicados = tipos_persona.filter(
                 x => x.idtipo_persona == item.idtipo_persona
             );
-
             if (duplicados.length > 1) {
-                throw new Error(
-                    `El tipo ${item.idtipo_persona} está repetido`
-                );
+                throw new Error( `El tipo ${item.idtipo_persona} está repetido`);
             }
 
             // ==============================
@@ -138,6 +113,17 @@ console.log("entrandi ")
                 item.idtipo_persona
             ]);
         }
+
+        await historial.registrarBitacora(connection, {
+                     idusuario:usuario.idusuario,
+                     tabla_afectada: 'perosonas',
+                     accion: 'CREATE',
+                     descripcion: `Se agrego una nueva persona: ${identidad} ${nombres} ${apellidos}` ,
+                     datos_anteriores:null,
+                     datos_nuevos:null,
+                     nivel: 'INFO'
+                 });
+
 
         // =====================================
         // COMMIT
@@ -267,7 +253,7 @@ const obtenerPersonaIdentidad = async (identidad) => {
     `, [identidad]);
 
     if(rows.length === 0){
-        throw new Error('Persona no encontrada sdsdsd');
+        throw new Error('Persona no encontrada');
     }
 
     return {

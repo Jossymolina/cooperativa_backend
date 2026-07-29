@@ -1,4 +1,6 @@
 const db = require('../Configuraciones/ConexionDb/db');
+const Historial = require('../services/Historial');
+
 
 obtenerTiposProductoFinanciero = async () => {
 
@@ -35,102 +37,61 @@ obtenerTiposProductoFinanciero = async () => {
 crearProductoFinanciero = async (body) => {
 console.log("Este es el serviio de producto financiero")
     const connection = await db.getConnection();
-
     try {
-
         await connection.beginTransaction();
-
         const {
-
             nombre,
             codigo,
             descripcion,
             id_tipo_producto,
-            configuracion = {}
-
+            configuracion = {},
+            usuario
         } = body;
-
         /*
         =====================================
         VALIDACIONES GENERALES
         =====================================
         */
-
         if (!nombre) {
-
-            throw new Error(
-                'Nombre requerido'
-            );
-
+            throw new Error(   'Nombre requerido'   );
         }
 
         if (!codigo) {
-
-            throw new Error(
-                'Código requerido'
-            );
-
+            throw new Error(  'Código requerido'  );
         }
-
         /*
         =====================================
         VALIDAR TIPO PRODUCTO
         =====================================
         */
-
         const [tipoRows] = await connection.query(
-            `
-            SELECT *
+            ` SELECT *
             FROM tipo_producto_financiero
             WHERE id_tipo_producto = ?
             `,
             [id_tipo_producto]
         );
-
         if (tipoRows.length === 0) {
-
-            throw new Error(
-                'Tipo producto financiero no existe'
-            );
-
+            throw new Error('Tipo producto financiero no existe');
         }
-
         const tipoProducto = tipoRows[0];
-
         /*
         =====================================
         VALIDACIONES DINAMICAS
         =====================================
         */
-
         // Ahorro
         if (tipoProducto.codigo === 'AHO') {
-
-            if (
-                configuracion.tasa_interes == null
-            ) {
-
-                throw new Error(
-                    'Producto ahorro requiere tasa_interes'
-                );
-
+            if (configuracion.tasa_interes == null) {
+                throw new Error('Producto ahorro requiere tasa_interes' );
             }
-
         }
 
         // Prestamo
         if (tipoProducto.codigo === 'PRE') {
-
-            if (
-                configuracion.tasa_mora == null
-            ) {
-
-                throw new Error(
-                    'Producto préstamo requiere tasa_mora'
-                );
-
+            if ( configuracion.tasa_mora == null ) {
+                throw new Error( 'Producto préstamo requiere tasa_mora' );
             }
-
         }
 
         /*
@@ -140,47 +101,36 @@ console.log("Este es el serviio de producto financiero")
         */
 
         const [codigoRows] = await connection.query(
-            `
-            SELECT id_producto_financiero
+            `SELECT id_producto_financiero
             FROM producto_financiero
             WHERE codigo = ?
             `,
             [codigo]
         );
-
         if (codigoRows.length > 0) {
-
-            throw new Error(
-                'Código ya existe'
-            );
-
+            throw new Error( 'Código ya existe'  );
         }
-
         /*
         =====================================
         INSERTAR PRODUCTO FINANCIERO
         =====================================
         */
-
-
-        const [productoInsert] =
-        await connection.query(
-            `
-            INSERT INTO producto_financiero
-            (
-                nombre,
-                codigo,
-                descripcion,
-                id_tipo_producto,
-                estado,
-                fecha_creacion
-            )
-            VALUES
-            (
-                ?, ?, ?, ?,
-                TRUE,
-                NOW()
-            )
+       const [productoInsert] = await connection.query(
+            `INSERT INTO producto_financiero
+                (
+                    nombre,
+                    codigo,
+                    descripcion,
+                    id_tipo_producto,
+                    estado,
+                    fecha_creacion
+                )
+                VALUES
+                (
+                    ?, ?, ?, ?,
+                    TRUE,
+                    NOW()
+                )
             `,
             [
                 nombre,
@@ -189,17 +139,13 @@ console.log("Este es el serviio de producto financiero")
                 id_tipo_producto
             ]
         );
-
-        const idProductoFinanciero =
-        productoInsert.insertId;
-
+        const idProductoFinanciero =  productoInsert.insertId;
         /*
         =====================================
         INSERTAR CONFIGURACION
         =====================================
         */
-
-    
+   
         await connection.query(
             `
             INSERT INTO producto_financiero_configuracion
@@ -241,34 +187,34 @@ console.log("Este es el serviio de producto financiero")
             )
             `,
             [
-
                 idProductoFinanciero,
-
                 configuracion.tasa_interes ?? 0,
                 configuracion.tasa_mora ?? 0,
-
                 configuracion.saldo_minimo ?? 0,
                 configuracion.monto_minimo_apertura ?? 0,
-
                 configuracion.plazo_minimo_meses ?? null,
                 configuracion.plazo_maximo_meses ?? null,
-
                 configuracion.permite_retiro ?? true,
                 configuracion.genera_interes ?? true,
                 configuracion.capitaliza_interes ?? false,
                 configuracion.permite_abono_capital ?? false,
-
                 configuracion.frecuencia_interes ?? null,
                 configuracion.tipo_calculo_interes ?? null,
-
                 configuracion.dias_base ?? 360,
-
                 new Date(configuracion.fecha_inicio_vigencia).toISOString().split('T')[0] ?? null,
                 new Date(configuracion.fecha_fin_vigencia).toISOString().split('T')[0] ?? null,
-               
-
             ]
         );
+
+            await Historial.registrarBitacora(connection, {
+                    idusuario:usuario.idusuario,
+                    tabla_afectada: 'producto_financiero',
+                    accion: 'CREATE',
+                    descripcion: 'Se creo un nuevo producto financiero.',
+                    datos_anteriores:null,
+                    datos_nuevos:null,
+                    nivel: 'INFO'
+                });
 
         /*
         =====================================
@@ -279,27 +225,15 @@ console.log("Este es el serviio de producto financiero")
         await connection.commit();
 
         return {
-
             ok: true,
-
-            mensaje:
-            'Producto financiero creado correctamente',
-
-            id_producto_financiero:
-            idProductoFinanciero
-
+            mensaje: 'Producto financiero creado correctamente',
+            id_producto_financiero: idProductoFinanciero
         };
-
     } catch (error) {
-
         await connection.rollback();
-
         throw error;
-
     } finally {
-
         connection.release();
-
     }
 
 };

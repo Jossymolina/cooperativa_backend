@@ -2,29 +2,19 @@ const service =
 require('../services/producto_financiero');
 
 crearProductoFinanciero = async (req, res) => {
-
     try {
-
-        const respuesta =
-        await service.crearProductoFinanciero(req.body);
-
+       const respuesta = await service.crearProductoFinanciero(req.body);
         return res.status(200).json({
             ok: true,
             msg: 'Producto financiero creado correctamente',
             data: respuesta
         });
-
     } catch (error) {
-
-        console.log(error);
-
-        return res.status(200).json({
+      return res.status(200).json({
             ok: false,
             msg: error.message
         });
-
     }
-
 };
 
 obtenerTiposProductoFinanciero = async (req, res) => {

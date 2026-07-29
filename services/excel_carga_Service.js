@@ -405,12 +405,15 @@ async function obtenerDetallesValidados(
 
 exports.procesarPlanilla = async (idCarga, idUsuario) => {
     const connection = await pool.getConnection();
+
     try {
         await connection.beginTransaction();
+
         const afiliados = await obtenerDetallesValidados(
             connection,
             idCarga
         );
+
         for (const registro of afiliados) {
             await procesarAfiliado(
                 connection,
@@ -418,21 +421,18 @@ exports.procesarPlanilla = async (idCarga, idUsuario) => {
                 idUsuario
             );
         }
+
         await cambiarEstadoPlanillaExcel(connection, idCarga);
+
         await connection.commit();
+
         return {
-            ok: true,
-            msg: 'La planilla fue procesada correctamente.'
+            mensaje: "La planilla fue procesada correctamente."
         };
 
     } catch (error) {
         await connection.rollback();
-        return {
-            ok: false,
-            msg: 'Ocurrió un error al procesar la planilla.',
-            error: error.message
-        };
-
+        throw error;
     } finally {
         connection.release();
     }

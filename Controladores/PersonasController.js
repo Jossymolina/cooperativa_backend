@@ -1,15 +1,10 @@
 const PersonasService = require('../Services/PersonasService');
 
 const crearPersona = async (req, res) => {
-
     try {
-console.log("creando persona")
         const respuesta = await PersonasService.crearPersona(req.body);
-
         res.json(respuesta);
-
     } catch (error) {
-
         res.status(200).json({
             ok: false,
             msg: error.message
