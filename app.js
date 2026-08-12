@@ -13,6 +13,8 @@ const RolesPermisosRoutes = require('./Rutas/RolesPermisosRoutes');
 const productos_financieros = require('./Rutas/producto_financiero');
 const afiliados_controlador = require('./Rutas/AfiliadosRoutes');
 const excel_ruta = require('./Rutas/excel_cargarRoutes');
+const rutasCatalogos = require('./Rutas/catalogoRoutes');
+
 
 
 
@@ -34,6 +36,8 @@ app.use('/api/', PersonasTiposRoutes);
 app.use('/api',productos_financieros );
 app.use('/api',afiliados_controlador );
 app.use('/api',excel_ruta );
+app.use('/api',rutasCatalogos );
+
 
 
 /*app.use('/api/', UsuariosRoutes);
