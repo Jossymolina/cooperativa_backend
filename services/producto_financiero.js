@@ -36,6 +36,7 @@ obtenerTiposProductoFinanciero = async () => {
 
 crearProductoFinanciero = async (body) => {
 console.log("Este es el serviio de producto financiero")
+console.log(body)
     const connection = await db.getConnection();
     try {
         await connection.beginTransaction();

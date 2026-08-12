@@ -235,6 +235,7 @@ const crearCuentaPrestamo = async (body) => {
         amortizacion,
         cantidad_cuotas,
     } = body;
+     
     const connection = await db.getConnection();
     try {
         await connection.beginTransaction();
@@ -271,21 +272,47 @@ const crearCuentaPrestamo = async (body) => {
             `
             );
 
-        const correlativo =
-            correlativoRows[0].correlativo;
-
+        const correlativo =      correlativoRows[0].correlativo;
 
         const tipoCuenta = "00" + producto.id_tipo_producto;
 
-        const numero_cuenta =
-            tipoCuenta +
-            String(id_producto_financiero).padStart(4, '0') +
-            String(correlativo).padStart(10, '0');
-
-
-
-        const [result] =
-            await connection.query(
+        const numero_cuenta =  tipoCuenta + String(id_producto_financiero).padStart(4, '0') +  String(correlativo).padStart(10, '0');
+       
+       console.log(connection.format(   `
+            INSERT INTO cuenta_financiera
+            (
+                id_afiliado,
+                id_producto_financiero,
+                numero_cuenta,
+                saldo_actual,
+                saldo_disponible,
+                fecha_apertura,
+                estado,
+                fecha_vencimiento
+            )
+            VALUES
+            (
+                ?,
+                ?,
+                ?,
+                ?,
+                ?,
+                ?,
+                ?,
+                ?
+            )
+            `,
+                [
+                    id_afiliado,
+                    id_producto_financiero,
+                    numero_cuenta,
+                    0,
+                    0,
+                    fecha_apertura,
+                    'ACTIVA',
+                    fecha_vencimiento
+                ]))
+        const [result] = await connection.query(
                 `
             INSERT INTO cuenta_financiera
             (
@@ -336,6 +363,7 @@ const crearCuentaPrestamo = async (body) => {
 
         }
         //Jossy aqui esta
+        console.log("Registrando la tablaaa:::::::::::::::::::")
         await registrarTablaPrestamo(connection, d);
         await connection.commit();
         return {
@@ -415,7 +443,7 @@ const registrarTablaPrestamo = async (connection, body) => {
                 monto_aprobado,
                 fecha_desembolso,
                 "FRANCESA",
-                "ACTIVO"
+                "PENDIENTE_APROBACION"
             ]
         );
         const id_prestamo = result.insertId;
@@ -720,7 +748,7 @@ async function buscarProductosAfiliado(body) {
         if (!identidad) {
             throw new Error('La identidad es requerida');
         }
-
+ 
         const query = `
             SELECT
                 CONCAT(personas.nombres, ' ', personas.apellidos) AS afiliado,
@@ -733,7 +761,8 @@ async function buscarProductosAfiliado(body) {
                 frecuencia_interes,
                 fecha_fin_vigencia,
                 fecha_inicio_vigencia,
-                cuenta_financiera.id_cuenta_financiera
+                cuenta_financiera.id_cuenta_financiera,
+                p.monto_aprobado,p.plazo_meses as plazo_obtenido,p.cuota_mensual,p.fecha_desembolso
             FROM cooperativa_db.personas
             JOIN cooperativa_db.afiliado
                 ON afiliado.idpersona = personas.idpersona
@@ -745,11 +774,12 @@ async function buscarProductosAfiliado(body) {
                 ON tipo_producto_financiero.id_tipo_producto = producto_financiero.id_tipo_producto
             JOIN cooperativa_db.producto_financiero_configuracion
                 ON producto_financiero_configuracion.id_producto_financiero = producto_financiero.id_producto_financiero
-            WHERE personas.identidad = ?;
+           left join  cooperativa_db.prestamo p on p.id_cuenta_financiera =  cuenta_financiera.id_cuenta_financiera and p.estado='DESEMBOLSADO'
+            WHERE personas.identidad = ? ;
         `;
-
+          console.log(query)
         const [rows] = await connection.query(query, [identidad]);
-
+console.log(rows)
         return rows;
 
     } finally {
