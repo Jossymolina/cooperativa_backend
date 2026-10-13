@@ -1,8 +1,9 @@
 const db = require('../Configuraciones/ConexionDb/db');
-const crearAfiliado = async (body) => {
-    const connection = await db.getConnection();
-    try {
 
+const crearAfiliado = async (body) => {
+    let  connection 
+    try {
+connection = await db.getConnection();
         await connection.beginTransaction();
 
         const {
@@ -64,13 +65,17 @@ const crearAfiliado = async (body) => {
         await connection.rollback();
         throw error;
     } finally {
+        if(connection){
         connection.release();
+
+        }
     }
 };
 
 const obtenerAfiliados = async () => {
-    const connection = await db.getConnection();
+    let  connection 
     try {
+        connection = await db.getConnection();
         const [rows] = await connection.query(
             ` SELECT personas.idpersona,personas.identidad,nombres,apellidos,sexo,fecha_nacimiento,estado_civil,correo,personas.fecha_creacion as fehca_creacion_persona,
                     id_afiliado,codigo_afiliado,fecha_afiliacion,afiliado.estado as estado_afiliacion,
@@ -81,15 +86,18 @@ const obtenerAfiliados = async () => {
     } catch (error) {
         throw error;
     } finally {
-        connection.release();
-    }
+        if(connection){
+           connection.release();
+        }
+      }
 
 };
 
 const obtenerAfiliadosDNI = async (body) => {
     const { identidad } = body
-    const connection = await db.getConnection();
+    let connection  
     try {
+        connection = await db.getConnection();
         const [rows] = await connection.query(
             `SELECT personas.idpersona,personas.identidad,nombres,apellidos,sexo,fecha_nacimiento,estado_civil,correo,personas.fecha_creacion as fehca_creacion_persona,
                     id_afiliado,codigo_afiliado,fecha_afiliacion,afiliado.estado as estado_afiliacion,
@@ -101,9 +109,20 @@ const obtenerAfiliadosDNI = async (body) => {
     } catch (error) {
         throw error;
     } finally {
-        connection.release();
+        if(connection){
+connection.release();
+        }
+        
     }
 };
+
+
+function generarNumeroCuenta() {
+    const tiempo = Date.now().toString().slice(-5);
+    const aleatorio = Math.floor(100 + Math.random() * 900);
+
+    return `${tiempo}${aleatorio}`;
+}
 
 const crearCuentaAhorro = async (body) => {
     const {
@@ -113,8 +132,9 @@ const crearCuentaAhorro = async (body) => {
         cuota_ahorro = 0,
         saldo_minimo_bloquedo = 0
     } = body;
-    const connection = await db.getConnection();
+    let  connection  
     try {
+        connection = await db.getConnection();
         await connection.beginTransaction();
         if (!id_afiliado) {
             throw new Error('El id_afiliado es requerido');
@@ -156,15 +176,10 @@ const crearCuentaAhorro = async (body) => {
         }
 
         const producto = productoRows[0];
-        // Bloquear la tabla mientras se obtiene el siguiente AUTO_INCREMENT
-        await connection.query('LOCK TABLES cuenta_financiera WRITE');
-        const [autoIncrement] = await connection.query(`
-            SELECT AUTO_INCREMENT
-            FROM information_schema.TABLES
-            WHERE TABLE_SCHEMA = DATABASE()
-              AND TABLE_NAME = 'cuenta_financiera'
-        `);
-        const siguienteId = autoIncrement[0].AUTO_INCREMENT;
+        
+      
+        const siguienteId = generarNumeroCuenta() //autoIncrement[0].AUTO_INCREMENT;
+
         const numero_cuenta =
             String(producto.id_tipo_producto).padStart(3, '0') +
             String(id_producto_financiero).padStart(4, '0') +
@@ -215,7 +230,9 @@ const crearCuentaAhorro = async (body) => {
         await connection.rollback();
         throw error;
     } finally {
+       if(connection){
         connection.release();
+        }
     }
 
 };
@@ -236,8 +253,9 @@ const crearCuentaPrestamo = async (body) => {
         cantidad_cuotas,
     } = body;
      
-    const connection = await db.getConnection();
+    let connection 
     try {
+       connection = await db.getConnection();
         await connection.beginTransaction();
         if (!id_afiliado) {
             throw new Error('El id_afiliado es requerido');
@@ -264,15 +282,9 @@ const crearCuentaPrestamo = async (body) => {
 
 
 
-        const [correlativoRows] =
-            await connection.query(
-                `
-            SELECT COUNT(*) + 1 AS correlativo
-            FROM cuenta_financiera
-            `
-            );
+    
 
-        const correlativo =      correlativoRows[0].correlativo;
+        const correlativo =      generarNumeroCuenta()    
 
         const tipoCuenta = "00" + producto.id_tipo_producto;
 
@@ -379,7 +391,9 @@ const crearCuentaPrestamo = async (body) => {
         await connection.rollback();
         throw error;
     } finally {
+        if(connection){
         connection.release();
+        }
     }
 
 };
@@ -514,8 +528,9 @@ const crearAmortizacionPrestamo = async (connection, body) => {
 };
 
 const sacarAfiliadosConPrestamos_Activos = async (body) => {
-    const connection = await db.getConnection();
+    let connection 
     try {
+        connection = await db.getConnection();
         const { estado } = body;
         const sql = `
             SELECT
@@ -547,7 +562,9 @@ const sacarAfiliadosConPrestamos_Activos = async (body) => {
     } catch (error) {
         throw error;
     } finally {
+       if(connection){
         connection.release();
+        }
     }
 };
 
@@ -691,8 +708,9 @@ const registrarMovimientoFinanciero = async (connection, {
 };
 
 const desembolsarPrestamos = async (body) => {
-    const connection = await db.getConnection();
+    let connection 
     try {
+        connection = await db.getConnection();
         await connection.beginTransaction();
         const {
             estado,
@@ -735,14 +753,16 @@ const desembolsarPrestamos = async (body) => {
         await connection.rollback();
         throw error;
     } finally {
+        if(connection){
         connection.release();
+        }
     }
 };
 
 async function buscarProductosAfiliado(body) {
-    const connection = await db.getConnection();
-
+    let connection  
     try {
+        connection = await db.getConnection();
         const { identidad } = body;
 
         if (!identidad) {
@@ -783,13 +803,16 @@ console.log(rows)
         return rows;
 
     } finally {
+        if(connection){
         connection.release();
+        }
     }
 }
 
 const regist = async (body) => {
-    const connection = await db.getConnection();
+    let connection  
     try {
+        connection = await db.getConnection();
         await connection.beginTransaction();
         const {
             estado,
@@ -848,14 +871,17 @@ const regist = async (body) => {
         console.error(error);
         throw error;
     } finally {
+       if(connection){
         connection.release();
+        }
     }
 
 };
 
 const sacarPrestamoXcuentaFinanciera = async (body) => {
-    const connection = await db.getConnection();
+    let connection  
     try {
+        connection = await db.getConnection();
         const { id_cuenta_financiera } = body;
         if (!id_cuenta_financiera) {
             throw new Error('El id_cuenta_financiera es requerido');
@@ -889,8 +915,9 @@ const sacarPrestamoXcuentaFinanciera = async (body) => {
 };
 
 const SacarCuotaPagarPrestamo = async (body) => {
-    const connection = await db.getConnection();
+    let connection 
     try {
+        connection = await db.getConnection();
         const { id_prestamo } = body;
         if (!id_prestamo) {
             throw new Error('El id_prestamo es requerido');
@@ -950,10 +977,10 @@ LIMIT 1;
 };
 
 const registrarCuotaPrestamo = async (body) => {
-    const connection = await db.getConnection();
+    let connection 
 
     try {
-
+connection = await db.getConnection();
         await connection.beginTransaction();
 
         const {
@@ -1004,7 +1031,9 @@ const registrarCuotaPrestamo = async (body) => {
         await connection.rollback();
         throw error;
     } finally {
+        if(connection){
         connection.release();
+        }
 
     }
 
@@ -1151,10 +1180,10 @@ async function aplicarAbonoCapital(
     productoSeleccionado
 ) {
 
-    const connection = await db.getConnection();
+    let connection  
 
     try {
-
+connection = await db.getConnection();
         await connection.beginTransaction();
 
         if (!nuevaAmortizacionArreglo || nuevaAmortizacionArreglo.length === 0) {
@@ -1329,10 +1358,10 @@ async function cancelarPrestamoTotal(
 
 ) {
 
-    const connection = await db.getConnection();
+    let connection 
 
     try {
-
+connection = await db.getConnection();
         await connection.beginTransaction();
         /**Saco que prestamo es apartir de la id cuenta finaciera */
         let prestamo_tabla = await connection.query(`SELECT * FROM cooperativa_db.prestamo where id_cuenta_financiera = ? FOR UPDATE`, [productoSeleccionado.id_cuenta_financiera]);
@@ -1540,8 +1569,9 @@ async function registrarPagoPrestamo(connection, {
 
 async function cambiarEstadoDeUnPrestamo(params) {
 
-    const connection = await db.getConnection();
+    let connection  
     try {
+        connection = await db.getConnection();
         await connection.beginTransaction();
         await cambiarEstadoPrestamos(
             connection,
@@ -1556,15 +1586,18 @@ async function cambiarEstadoDeUnPrestamo(params) {
         await connection.rollback();
         throw error;
     } finally {
+       if(connection){
         connection.release();
+        }
     }
 
 }
 
 async function BuscarProductoDEAhorroAfiliado(body) {
-    const connection = await db.getConnection();
+    let connection  
     const { identidad } = body
     try {
+        connection = await db.getConnection();
         if (!identidad) {
             throw new Error('La identidad es requerida');
         }
@@ -1598,14 +1631,17 @@ async function BuscarProductoDEAhorroAfiliado(body) {
     } catch (error) {
         throw error;
     } finally {
+        if(connection){
         connection.release();
+        }
     }
 
 }
 
 const depositar_CuentaAhorro = async (body) => {
-    const connection = await db.getConnection();
+    let connection 
     try {
+        connection = await db.getConnection();
         await connection.beginTransaction();
         const {
             id_cuenta_financiera,
@@ -1646,15 +1682,18 @@ const depositar_CuentaAhorro = async (body) => {
         await connection.rollback();
         throw error;
     } finally {
+        if(connection){
         connection.release();
+        }
     }
 
 };
 
 
 const retirar_CuentaAhorro = async (body) => {
-    const connection = await db.getConnection();
+    let connection 
     try {
+        connection = await db.getConnection();
         const {
             id_cuenta_financiera,
             retiro_monto,
@@ -1744,9 +1783,9 @@ const retirar_CuentaAhorro = async (body) => {
 
 
 const obtenerCuotasMesAfiliados = async () => {
-    const connection = await db.getConnection();
+    let connection  
     try {
-
+connection = await db.getConnection();
         const sql = `
     
 SELECT
@@ -2168,8 +2207,10 @@ const obtenerSaldoPromedio = async (
 
 
 async function cambiarEstadoDeUnPrestamoEnBloque(prestamos) {
-    const connection = await db.getConnection();
+    let connection  
     try {
+      connection = await db.getConnection();
+        
         await connection.beginTransaction();
         for (const prest of prestamos) {
             await cambiarEstadoPrestamos(
@@ -2186,7 +2227,9 @@ async function cambiarEstadoDeUnPrestamoEnBloque(prestamos) {
         await connection.rollback();
         throw error;
     } finally {
+        if(connection){
         connection.release();
+        }
     }
 }
 

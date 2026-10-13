@@ -4,8 +4,9 @@ const historial = require('../services/Historial');
 
 
 const crearPersona = async (body) => {
-    const connection = await pool.getConnection();
+    let connection
     try {
+        connection = await pool.getConnection();
         const {
             identidad,
             nombres,
@@ -19,7 +20,7 @@ const crearPersona = async (body) => {
             cuenta,
             usuario
         } = body;
-       // =====================================
+        // =====================================
         // VALIDAR IDENTIDAD DUPLICADA
         // =====================================
         const [personaExiste] = await connection.query(`
@@ -94,7 +95,7 @@ const crearPersona = async (body) => {
                 x => x.idtipo_persona == item.idtipo_persona
             );
             if (duplicados.length > 1) {
-                throw new Error( `El tipo ${item.idtipo_persona} está repetido`);
+                throw new Error(`El tipo ${item.idtipo_persona} está repetido`);
             }
 
             // ==============================
@@ -115,14 +116,14 @@ const crearPersona = async (body) => {
         }
 
         await historial.registrarBitacora(connection, {
-                     idusuario:usuario.idusuario,
-                     tabla_afectada: 'perosonas',
-                     accion: 'CREATE',
-                     descripcion: `Se agrego una nueva persona: ${identidad} ${nombres} ${apellidos}` ,
-                     datos_anteriores:null,
-                     datos_nuevos:null,
-                     nivel: 'INFO'
-                 });
+            idusuario: usuario.idusuario,
+            tabla_afectada: 'perosonas',
+            accion: 'CREATE',
+            descripcion: `Se agrego una nueva persona: ${identidad} ${nombres} ${apellidos}`,
+            datos_anteriores: null,
+            datos_nuevos: null,
+            nivel: 'INFO'
+        });
 
 
         // =====================================
@@ -138,14 +139,12 @@ const crearPersona = async (body) => {
         };
 
     } catch (error) {
-
         await connection.rollback();
         throw error;
-
     } finally {
-
-        connection.release();
-
+        if (connection) {
+            connection.release();
+        }
     }
 
 };
@@ -247,7 +246,7 @@ const eliminarPersona = async (idpersona) => {
 
 
 const obtenerPersonaIdentidad = async (identidad) => {
-  console.log(pool.format(`SELECT * FROM cooperativa_db.personas where identidad = ?`,[identidad]))
+  
     const [rows] = await pool.query(`
         SELECT * FROM cooperativa_db.personas where identidad = ?
     `, [identidad]);

@@ -1,6 +1,9 @@
 
 const pool = require('../Configuraciones/ConexionDb/db');
 const historial = require('../services/Historial');
+const {   ejecutarPartidaAutomatica } = require('./PartidaAutomaticaService');
+
+ 
 //I sertar una cuenta nueva
 async function insertarCuentaContable(
     codigo,
@@ -10,8 +13,9 @@ async function insertarCuentaContable(
     naturaleza,
     requiere_tercero
 ) {
-    const connection = await pool.getConnection();
+    let connection ;
     try {
+        connection = await pool.getConnection();
         await connection.beginTransaction();
         // Verificar que el código no exista
         const [cuentaExistente] = await connection.query(
@@ -123,7 +127,10 @@ async function insertarCuentaContable(
         await connection.rollback();
         throw error;
     } finally {
-        connection.release();
+        if(connection){
+connection.release();
+        }
+        
     }
 }
 
@@ -196,10 +203,10 @@ async function actualizarCuentaContable(
     estado
 ) {
 
-    const connection = await pool.getConnection();
+    let connection  
 
     try {
-
+connection = await pool.getConnection();
         await connection.beginTransaction();
 
 
@@ -355,8 +362,10 @@ async function actualizarCuentaContable(
         throw error;
 
     } finally {
-
+if(connection){
         connection.release();
+
+}
     }
 }
 
@@ -364,9 +373,9 @@ async function actualizarCuentaContable(
 //Eliminar una cuenta
 async function eliminarCuentaContable(idcuenta) {
 
-    const connection = await pool.getConnection();
+    let connection  
     try {
-
+connection = await pool.getConnection();
         await connection.beginTransaction();
 
         // ==========================================
@@ -450,7 +459,9 @@ async function eliminarCuentaContable(idcuenta) {
 
     } finally {
 
-        connection.release();
+        if(connection){
+            connection.release();
+        }
     }
 }
 
@@ -465,10 +476,10 @@ async function eliminarCuentaContable(idcuenta) {
  */
 const obtenerEjercicio = async (idEjercicio) => {
 
-    const connection = await pool.getConnection();
+    let connection 
 
     try {
-
+connection = await pool.getConnection();
         const [ejercicios] = await connection.query(`
             SELECT
                 id_ejercicio,
@@ -519,8 +530,10 @@ const obtenerEjercicio = async (idEjercicio) => {
 
 
     } finally {
-
-        connection.release();
+if(connection){
+connection.release();
+}
+        
 
     }
 
@@ -533,10 +546,10 @@ const crearEjercicio = async ({
     usuario
 }) => {
 
-    const connection = await pool.getConnection();
+    let connection  
 
     try {
-
+connection = await pool.getConnection();
         await connection.beginTransaction();
 
         // ----------------------------------------------------
@@ -731,7 +744,9 @@ const crearEjercicio = async ({
 
     } finally {
 
-        connection.release();
+        if(connection){
+connection.release();
+}
     }
 };
 
@@ -745,10 +760,10 @@ const actualizarEjercicio = async ({
     usuario
 }) => {
 
-    const connection = await pool.getConnection();
+    let connection  
 
     try {
-
+connection = await pool.getConnection();
         await connection.beginTransaction();
 
 
@@ -920,8 +935,9 @@ const actualizarEjercicio = async ({
         throw error;
 
     } finally {
-
+      if(connection){
         connection.release();
+      }
     }
 };
 
@@ -931,10 +947,10 @@ const actualizarEjercicio = async ({
  */
 const eliminarEjercicio = async (idEjercicio) => {
 
-    const connection = await pool.getConnection();
+    let connection 
 
     try {
-
+ connection = await pool.getConnection();
         await connection.beginTransaction();
 
 
@@ -1024,29 +1040,50 @@ const eliminarEjercicio = async (idEjercicio) => {
         throw error;
 
     } finally {
-
+        if(connection){
         connection.release();
+
+        }
     }
 };
 
 const listarEjercicios = async () => {
-    const connection = await pool.getConnection();
-    const [rows] = await connection.query(`
-        SELECT
-            e.id_ejercicio,
-            e.anio,
-            e.fecha_inicio,
-            e.fecha_fin,
-            e.estado,
-            e.fecha_apertura,
-            e.fecha_cierre,
-            e.usuario_apertura,
-            e.usuario_cierre
-        FROM conta_ejercicio_contable e
-        ORDER BY e.anio DESC
-    `);
+    let connection;
 
-    return rows;
+    try {
+
+        connection = await pool.getConnection();
+
+        const [rows] = await connection.query(`
+            SELECT
+                e.id_ejercicio,
+                e.anio,
+                e.fecha_inicio,
+                e.fecha_fin,
+                e.estado,
+                e.fecha_apertura,
+                e.fecha_cierre,
+                e.usuario_apertura,
+                e.usuario_cierre
+            FROM conta_ejercicio_contable e
+            ORDER BY e.anio DESC
+        `);
+
+        return rows;
+
+    } catch (error) {
+
+        console.log(error);
+
+        throw new Error("Error en la consulta");
+
+    } finally {
+
+        if (connection) {
+            connection.release();
+        }
+
+    }
 };
 
 
@@ -1056,8 +1093,9 @@ const cerrarPeriodo = async ({
     idPeriodo,
     usuario
 }) => {
-    const connection = await pool.getConnection();
+    let  connection
     try {
+       connection  = await pool.getConnection();
         console.log("El id dentro del servicio ",idPeriodo)
         await connection.beginTransaction();
         // 1. Obtener período actual
@@ -1172,8 +1210,10 @@ const cerrarPeriodo = async ({
         throw error;
 
     } finally {
-
+                if(connection){
         connection.release();
+
+                }
 
     }
 };
@@ -1181,10 +1221,10 @@ const cerrarPeriodo = async ({
 
 const cerrarEjercicio = async (idEjercicio, usuario) => {
 
-    const connection = await pool.getConnection();
+    let connection  ;
 
     try {
-
+connection = await pool.getConnection();
         await connection.beginTransaction();
 
         // 1. Obtener ejercicio
@@ -1259,8 +1299,10 @@ const cerrarEjercicio = async (idEjercicio, usuario) => {
         throw error;
 
     } finally {
+        if(connection){
+                connection.release();
 
-        connection.release();
+        }
 
     }
 };
@@ -1274,10 +1316,10 @@ const cerrarEjercicio = async (idEjercicio, usuario) => {
  */
 const insertarAsientoContable = async (p) => {
 
-    const connection = await pool.getConnection();
+    let connection  
 
     try {
-
+connection = await pool.getConnection();
         await connection.beginTransaction();
 
 
@@ -1754,8 +1796,10 @@ const insertarAsientoContable = async (p) => {
         throw error;
 
     } finally {
-
+if(connection){
         connection.release();
+
+}
 
     }
 
@@ -2482,33 +2526,22 @@ async function generarSaldoPeriodo(id_periodo) {
 
 
     } catch (error) {
-
         if (conexion) {
-
             try {
                 await conexion.rollback();
-
             } catch (rollbackError) {
-
                 console.error(
                     'Error realizando rollback:',
                     rollbackError
                 );
             }
         }
-
-
         console.error(
             'Error generando saldo del período:',
             error
         );
-
-
         throw error;
-
-
     } finally {
-
         if (conexion) {
             conexion.release();
         }
@@ -4953,6 +4986,55 @@ async function consultarLibroMayor(id_periodo, idcuenta = null) {
     }
 
 }
+
+
+const probarPartida = async () => {
+
+    try {
+        const resultado =    await ejecutarPartidaAutomatica({
+
+                codigoRegla: 'PAGO_PRESTAMO',
+
+                fecha: '2026-08-24',
+
+                concepto:
+                    'Pago de préstamo #4587',
+
+                origen:
+                    'PRESTAMO_PAGO',
+
+                referencia:
+                    '98542',
+
+                usuario: 1,
+
+                parametros: {
+
+                    cuentaBanco: 40,
+
+                    capital: 1200,
+
+                    interes: 300,
+
+                    total: 1500
+                }
+            });
+
+        console.log(
+            JSON.stringify(resultado, null, 2)
+        );
+
+    } catch (error) {
+
+        console.error(
+            'Error:',
+            error.message
+        );
+    }
+};
+
+ 
+
 
 module.exports = {
     insertarCuentaContable,

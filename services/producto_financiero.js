@@ -4,10 +4,10 @@ const Historial = require('../services/Historial');
 
 obtenerTiposProductoFinanciero = async () => {
 
-    const connection = await db.getConnection();
+    let connection  
 
     try {
-
+connection = await db.getConnection();
         const [rows] = await connection.query(
             `
             SELECT
@@ -27,18 +27,18 @@ obtenerTiposProductoFinanciero = async () => {
         throw error;
 
     } finally {
-
+        if(connection){
         connection.release();
-
+        }
     }
 
 };
 
 crearProductoFinanciero = async (body) => {
-console.log("Este es el serviio de producto financiero")
-console.log(body)
-    const connection = await db.getConnection();
+ 
+    let connection 
     try {
+        connection = await db.getConnection();
         await connection.beginTransaction();
         const {
             nombre,
@@ -234,7 +234,10 @@ console.log(body)
         await connection.rollback();
         throw error;
     } finally {
-        connection.release();
+        if(connection){
+           connection.release();
+        }
+        
     }
 
 };
@@ -251,10 +254,10 @@ OBTENER PRODUCTOS FINANCIEROS
 
 const obtenerProductosFinancieros = async () => {
 
-    const connection = await db.getConnection();
+    let connection  
 
     try {
-
+connection = await db.getConnection();
         const [rows] = await connection.query(
             `
             SELECT
@@ -334,8 +337,10 @@ const obtenerProductosFinancieros = async () => {
         throw error;
 
     } finally {
-
+if(connection){
         connection.release();
+
+}
 
     }
 
@@ -350,10 +355,10 @@ OBTENER PRODUCTO FINANCIERO POR ID
 const obtenerProductoFinancieroPorId =
 async (idProductoFinanciero) => {
 
-    const connection = await db.getConnection();
+    let connection ;
 
     try {
-
+connection = await db.getConnection();
         const [rows] = await connection.query(
             `
             SELECT
@@ -442,8 +447,10 @@ async (idProductoFinanciero) => {
         throw error;f
 
     } finally {
-
-        connection.release();
+if(connection){
+connection.release();
+}
+        
 
     }
 

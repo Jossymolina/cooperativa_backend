@@ -1,7 +1,6 @@
 const pool = require('../Configuraciones/ConexionDb/db');
 
 const crearAccion = async (body) => {
-
     const {
         codigo,
         nombre_accion,

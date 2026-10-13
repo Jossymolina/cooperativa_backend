@@ -404,9 +404,10 @@ async function obtenerDetallesValidados(
 }
 
 exports.procesarPlanilla = async (idCarga, idUsuario) => {
-    const connection = await pool.getConnection();
+    let connection  ;
 
     try {
+        connection = await pool.getConnection()
         await connection.beginTransaction();
 
         const afiliados = await obtenerDetallesValidados(
@@ -434,7 +435,10 @@ exports.procesarPlanilla = async (idCarga, idUsuario) => {
         await connection.rollback();
         throw error;
     } finally {
-        connection.release();
+        if(connection){
+             connection.release();
+        }
+       
     }
 };
 
